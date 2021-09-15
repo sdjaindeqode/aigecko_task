@@ -1,0 +1,125 @@
+{% extends 'base.html' %}
+{% block css %}
+<style>
+    .divform{
+        display: inline;
+    }
+</style>
+{% endblock %}
+{% block content %}
+<div class="container">
+    <form name="photo" id="imageUploadForm" enctype="multipart/form-data" method="post">
+        <input type="file" id="ImageBrowse" name="file1"/>
+        <input type="submit" name="upload" value="Upload" />
+    </form>
+    <p id="upload-result"></p>
+</div>
+<hr/>
+<div class="container">
+    <input type="string" id="urlImage"/>
+    <input type="button" id="urlImageButton" value="Upload by link"/>
+    <p id="upload-url-result"></p>
+</div>
+<hr/>
+<div class="container">
+    <input type="string" id="analyseImage"/>
+    <input type="button" id="analyseImageButton" value="Analyse"/>
+    <p id="analyse-result"></p>
+</div>
+<hr/>
+<div class="container list-images">
+    <input type="button" id="listImageButton" value="List all images"/>
+    <div id='list-div'>
+
+    </div>
+    <p id='list-result'></p>
+</div>
+{% endblock %}
+{% block js %}
+<script>
+$(document).ready(function (e) {
+    $('#imageUploadForm').on('submit',(function(e) {
+        e.preventDefault();
+        var formData = new FormData(this);
+        $.ajax({
+            type:'POST',
+            url: '/upload_image',
+            data: formData,
+            processData: false,
+            contentType: false,
+            enctype: 'multipart/form-data',
+            success:function(data){
+                document.getElementById('upload-result').innerHTML = data.message
+                document.getElementById('listImageButton').click()
+            },
+            error: function(data){
+                document.getElementById('upload-result').innerHTML = data.responseJSON.error
+            }
+        });
+    }));
+    $('#urlImageButton').on('click',(function(e) {
+        e.preventDefault();
+        let url = document.getElementById('urlImage')
+        if (!(url !== null && url.value !== "")){
+            return
+        }
+        url = url.value
+        $.ajax({
+            type:'GET',
+            url: `/upload_image/${url}`,
+            success:function(data){
+                document.getElementById('upload-url-result').innerHTML = data.message
+                document.getElementById('listImageButton').click()
+            },
+            error: function(data){
+                document.getElementById('upload-url-result').innerHTML = data.responseJSON.error
+            }
+        });
+    }));
+    $('#analyseImageButton').on('click',(function(e) {
+        e.preventDefault();
+        let id = document.getElementById('analyseImage')
+        if (!(id !== null && id.value !== "")){
+            return
+        }
+        id = id.value
+        $.ajax({
+            type:'GET',
+            url: `/analyse_image/${id}`,
+            success:function(data){
+                document.getElementById('analyse-result').innerHTML = data.message
+            },
+            error: function(data){
+                document.getElementById('analyse-result').innerHTML = data.responseJSON.error
+            }
+        });
+    }));
+    $('#listImageButton').on('click',(function(e) {
+        e.preventDefault();
+        $.ajax({
+            type:'GET',
+            url: '/list_images',
+            success:function(data){
+                document.getElementById('list-div').innerHTML = ''
+                if(data.file_list.length === 0){
+                    document.getElementById('list-result').innerHTML = 'There are no images uploaded.'
+                }else{
+                    files = data.file_list
+                    const u_list = document.createElement('ul')
+                    files.forEach((file) => {
+                        const li_ele = document.createElement('li')
+                        const link = document.createElement('a')
+                        link.href = file.image
+                        link.innerHTML = file.id
+                        li_ele.appendChild(link)
+                        u_list.appendChild(li_ele)
+                    })
+                    document.getElementById('list-div').appendChild(u_list)
+                }
+            },
+        });
+    }));
+});
+
+</script>
+{% endblock %}
