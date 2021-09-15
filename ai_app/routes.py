@@ -11,35 +11,43 @@ from ai_app import app, ALLOWED_EXTENSIONS
 
 
 def allowed_file(filename):
+    '''
+    Used to check if file is valid or not.
+    '''
     return '.' in filename and \
            filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS
 
 
 def secure_filename(filename):
+    '''
+    Used to generate unique id for every file.
+    '''
     curr_time = time.time()
     extension = filename.rsplit('.', 1)[1].lower()
     if not extension in ALLOWED_EXTENSIONS:
-        extension = 'jpg'
+        extension = 'jpg' # only done when image is uploaded through url and do not have proper extension
     name = str(curr_time) + filename
     filename = hashlib.md5(name.encode('utf-8')).hexdigest() + '.' + extension
     return filename
 
 
-def get_response_image(image_path):
-    pil_img = Image.open(image_path, mode='r') # reads the PIL image
-    byte_arr = io.BytesIO()
-    pil_img.save(byte_arr, format='PNG') # convert the PIL image to byte array
-    encoded_img = encodebytes(byte_arr.getvalue()).decode('ascii') # encode as base64
-    return encoded_img
-
-
 @app.route('/')
 def index():
+    """
+    This view renders the template for the ease of the user.
+    Methods: GET
+    url: '/'
+    """
     return render_template('upload.html')
 
 
 @app.route('/list_images', methods=['GET'])
 def list_images():
+    """
+    This view returns the list of images already uploaded to server.
+    Methods: GET
+    url: '/list_images'
+    """
     folder = app.config['UPLOAD_FOLDER']
     files = os.listdir(folder)
     encoded_response = []
@@ -51,6 +59,12 @@ def list_images():
 
 @app.route('/upload_image', methods=['POST'])
 def upload_image():
+    """
+    This view is used when user uploads a file to server directly.
+    Methods: POST
+    url: '/upload_image'
+    data: 'file1'
+    """
     if 'file1' not in request.files:
         flash('No file part')
         return jsonify({'error': 'Please upload a file.'}), 400
@@ -66,6 +80,11 @@ def upload_image():
 
 @app.route('/upload_image/<path:url>', methods=['GET'])
 def upload_by_link(url):
+    """
+    This view is used when user uploads a file to server using a url.
+    Methods: GET
+    url: '/upload_image/<path:url>'
+    """
     try:
         response = requests.get(url)
     except Exception as e:
@@ -82,6 +101,11 @@ def upload_by_link(url):
 
 @app.route('/analyse_image/<string:hash_id>', methods=['GET'])
 def analyse_image(hash_id):
+    """
+    This view is used to analyse image of given id by user.
+    Methods: GET
+    url: '/analyse_image/<string:hash_id>'
+    """
     if not re.findall(r"([a-fA-F\d]{32})", hash_id):
         return jsonify({'error': 'Please provide valid id.'}), 400
     folder = app.config['UPLOAD_FOLDER']
